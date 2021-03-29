@@ -2,7 +2,7 @@
 // ***************************** CEF4Delphi *******************************
 // ************************************************************************
 //
-// CEF4Delphi is based on DCEF3 which uses CEF3 to embed a chromium-based
+// CEF4Delphi is based on DCEF3 which uses CEF to embed a chromium-based
 // browser in Delphi applications.
 //
 // The original license of DCEF3 still applies to CEF4Delphi.
@@ -10,7 +10,7 @@
 // For more information about CEF4Delphi visit :
 //         https://www.briskbard.com/index.php?lang=en&pageid=cef
 //
-//        Copyright © 2019 Salvador Diaz Fau. All rights reserved.
+//        Copyright © 2021 Salvador Diaz Fau. All rights reserved.
 //
 // ************************************************************************
 // ************ vvvv Original license and comments below vvvv *************
@@ -49,7 +49,7 @@ unit uCEFLoadHandler;
 interface
 
 uses
-  uCEFBaseRefCounted, uCEFInterfaces, uCEFTypes, uCEFApplication;
+  uCEFBaseRefCounted, uCEFInterfaces, uCEFTypes, uCEFApplicationCore;
 
 type
   TCefLoadHandlerOwn = class(TCefBaseRefCountedOwn, ICefLoadHandler)
@@ -77,21 +77,23 @@ type
       procedure RemoveReferences; override;
 
     public
-      constructor Create(const events: Pointer); reintroduce; virtual;
+      constructor Create(const events : IChromiumEvents); reintroduce; virtual;
       destructor  Destroy; override;
   end;
 
   TCustomRenderLoadHandler = class(TCefLoadHandlerOwn)
     protected
-      FCefApp : TCefApplication;
+      FCefApp : TCefApplicationCore;
 
       procedure OnLoadingStateChange(const browser: ICefBrowser; isLoading, canGoBack, canGoForward: Boolean); override;
       procedure OnLoadStart(const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType); override;
       procedure OnLoadEnd(const browser: ICefBrowser; const frame: ICefFrame; httpStatusCode: Integer); override;
       procedure OnLoadError(const browser: ICefBrowser; const frame: ICefFrame; errorCode: TCefErrorCode; const errorText, failedUrl: ustring); override;
 
+      procedure RemoveReferences; override;
+
     public
-      constructor Create(const aCefApp : TCefApplication); reintroduce; virtual;
+      constructor Create(const aCefApp : TCefApplicationCore); reintroduce; virtual;
       destructor  Destroy; override;
   end;
 
@@ -211,11 +213,11 @@ end;
 
 // TCustomLoadHandler
 
-constructor TCustomLoadHandler.Create(const events : Pointer);
+constructor TCustomLoadHandler.Create(const events : IChromiumEvents);
 begin
   inherited Create;
 
-  FEvents := events;
+  FEvents := Pointer(events);
 end;
 
 destructor TCustomLoadHandler.Destroy;
@@ -264,7 +266,7 @@ end;
 
 // TCustomRenderLoadHandler
 
-constructor TCustomRenderLoadHandler.Create(const aCefApp : TCefApplication);
+constructor TCustomRenderLoadHandler.Create(const aCefApp : TCefApplicationCore);
 begin
   inherited Create;
 
@@ -273,9 +275,14 @@ end;
 
 destructor TCustomRenderLoadHandler.Destroy;
 begin
-  FCefApp := nil;
+  RemoveReferences;
 
   inherited Destroy;
+end;
+
+procedure TCustomRenderLoadHandler.RemoveReferences;
+begin
+  FCefApp := nil;
 end;
 
 procedure TCustomRenderLoadHandler.OnLoadEnd(const browser        : ICefBrowser;

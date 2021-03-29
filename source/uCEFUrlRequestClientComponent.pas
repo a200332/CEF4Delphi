@@ -2,7 +2,7 @@
 // ***************************** CEF4Delphi *******************************
 // ************************************************************************
 //
-// CEF4Delphi is based on DCEF3 which uses CEF3 to embed a chromium-based
+// CEF4Delphi is based on DCEF3 which uses CEF to embed a chromium-based
 // browser in Delphi applications.
 //
 // The original license of DCEF3 still applies to CEF4Delphi.
@@ -10,7 +10,7 @@
 // For more information about CEF4Delphi visit :
 //         https://www.briskbard.com/index.php?lang=en&pageid=cef
 //
-//        Copyright © 2019 Salvador Diaz Fau. All rights reserved.
+//        Copyright © 2021 Salvador Diaz Fau. All rights reserved.
 //
 // ************************************************************************
 // ************ vvvv Original license and comments below vvvv *************
@@ -51,9 +51,9 @@ interface
 uses
   {$IFDEF DELPHI16_UP}
     {$IFDEF MSWINDOWS}WinApi.Windows, WinApi.Messages, WinApi.ActiveX,{$ENDIF}
-    System.Classes, Vcl.Controls, Vcl.Graphics, Vcl.Forms, System.Math,
+    System.Classes, System.Math,
   {$ELSE}
-    {$IFDEF MSWINDOWS}Windows, ActiveX,{$ENDIF} Classes, Forms, Controls, Graphics, Math,
+    {$IFDEF MSWINDOWS}Windows, ActiveX,{$ENDIF} Classes, Math,
     {$IFDEF FPC}
     LCLProc, LCLType, LCLIntf, LResources, LMessages, InterfaceBase,
     {$ELSE}
@@ -110,6 +110,33 @@ type
 {$IFDEF FPC}
 procedure Register;
 {$ENDIF}
+
+// *********************************************************
+// ********************** ATTENTION ! **********************
+// *********************************************************
+// **                                                     **
+// **  MANY OF THE EVENTS IN CEF4DELPHI COMPONENTS LIKE   **
+// **  TCHROMIUM, TFMXCHROMIUM OR TCEFAPPLICATION ARE     **
+// **  EXECUTED IN A CEF THREAD BY DEFAULT.               **
+// **                                                     **
+// **  WINDOWS CONTROLS MUST BE CREATED AND DESTROYED IN  **
+// **  THE SAME THREAD TO AVOID ERRORS.                   **
+// **  SOME OF THEM RECREATE THE HANDLERS IF THEY ARE     **
+// **  MODIFIED AND CAN CAUSE THE SAME ERRORS.            **
+// **                                                     **
+// **  DON'T CREATE, MODIFY OR DESTROY WINDOWS CONTROLS   **
+// **  INSIDE THE CEF4DELPHI EVENTS AND USE               **
+// **  SYNCHRONIZATION OBJECTS TO PROTECT VARIABLES AND   **
+// **  FIELDS IF THEY ARE ALSO USED IN THE MAIN THREAD.   **
+// **                                                     **
+// **  READ THIS FOR MORE INFORMATION :                   **
+// **  https://www.briskbard.com/index.php?pageid=cef     **
+// **                                                     **
+// **  USE OUR FORUMS FOR MORE QUESTIONS :                **
+// **  https://www.briskbard.com/forum/                   **
+// **                                                     **
+// *********************************************************
+// *********************************************************
 
 implementation
 

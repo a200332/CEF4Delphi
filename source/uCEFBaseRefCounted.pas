@@ -2,7 +2,7 @@
 // ***************************** CEF4Delphi *******************************
 // ************************************************************************
 //
-// CEF4Delphi is based on DCEF3 which uses CEF3 to embed a chromium-based
+// CEF4Delphi is based on DCEF3 which uses CEF to embed a chromium-based
 // browser in Delphi applications.
 //
 // The original license of DCEF3 still applies to CEF4Delphi.
@@ -10,7 +10,7 @@
 // For more information about CEF4Delphi visit :
 //         https://www.briskbard.com/index.php?lang=en&pageid=cef
 //
-//        Copyright © 2019 Salvador Diaz Fau. All rights reserved.
+//        Copyright © 2021 Salvador Diaz Fau. All rights reserved.
 //
 // ************************************************************************
 // ************ vvvv Original license and comments below vvvv *************
@@ -76,7 +76,9 @@ type
     public
       constructor CreateData(size: Cardinal; owned : boolean = False); virtual;
       destructor  Destroy; override;
-      function    SameAs(aData : Pointer) : boolean;
+      function    SameAs(aData : Pointer) : boolean; overload;
+      function    SameAs(const aBaseRefCounted : ICefBaseRefCounted) : boolean; overload;
+      procedure   DestroyOtherRefs;
       function    Wrap: Pointer;
   end;
 
@@ -90,7 +92,9 @@ type
     public
       constructor Create(data: Pointer); virtual;
       destructor  Destroy; override;
-      function    SameAs(aData : Pointer) : boolean;
+      function    SameAs(aData : Pointer) : boolean; overload;
+      function    SameAs(const aBaseRefCounted : ICefBaseRefCounted) : boolean; overload;
+      procedure   DestroyOtherRefs;
       function    Wrap: Pointer;
       class function UnWrap(data: Pointer): ICefBaseRefCounted;
   end;
@@ -100,7 +104,7 @@ type
 implementation
 
 uses
-  uCEFTypes, uCEFMiscFunctions, uCEFConstants, uCEFApplication;
+  uCEFTypes, uCEFMiscFunctions;
 
 
 // ***********************************************
@@ -221,6 +225,32 @@ begin
   Result := (FData = aData);
 end;
 
+function TCefBaseRefCountedOwn.SameAs(const aBaseRefCounted : ICefBaseRefCounted) : boolean;
+var
+  TempData : Pointer;
+begin
+  Result := False;
+
+  if (aBaseRefCounted <> nil) then
+    begin
+      TempData := aBaseRefCounted.Wrap;
+
+      if (TempData <> nil) then
+        begin
+          Result := SameAs(TempData);
+
+          if assigned(PCefBaseRefCounted(TempData)^.release) then
+            PCefBaseRefCounted(TempData)^.release(PCefBaseRefCounted(TempData));
+        end;
+    end;
+end;
+
+procedure TCefBaseRefCountedOwn.DestroyOtherRefs;
+begin
+  while HasAtLeastOneRef and not(HasOneRef) do
+    _Release;
+end;
+
 function TCefBaseRefCountedOwn.Wrap: Pointer;
 begin
   Result := FData;
@@ -280,6 +310,26 @@ begin
   Result := (FData = aData);
 end;
 
+function TCefBaseRefCountedRef.SameAs(const aBaseRefCounted : ICefBaseRefCounted) : boolean;
+var
+  TempData : Pointer;
+begin
+  Result := False;
+
+  if (aBaseRefCounted <> nil) then
+    begin
+      TempData := aBaseRefCounted.Wrap;
+
+      if (TempData <> nil) then
+        begin
+          Result := SameAs(TempData);
+
+          if assigned(PCefBaseRefCounted(TempData)^.release) then
+            PCefBaseRefCounted(TempData)^.release(PCefBaseRefCounted(TempData));
+        end;
+    end;
+end;
+
 class function TCefBaseRefCountedRef.UnWrap(data: Pointer): ICefBaseRefCounted;
 begin
   if (data <> nil) then
@@ -309,6 +359,11 @@ end;
 function TCefBaseRefCountedRef.HasAtLeastOneRef : boolean;
 begin
   Result := (PCefBaseRefCounted(FData)^.has_at_least_one_ref(PCefBaseRefCounted(FData)) <> 0);
+end;
+
+procedure TCefBaseRefCountedRef.DestroyOtherRefs;
+begin
+  //
 end;
 
 
